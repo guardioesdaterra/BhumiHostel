@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, shrink-to-fit=no, viewport-fit=cover">
 <title>Bhumi Hostel &amp; Bhumi Coffee — Proposta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,7 +10,7 @@
 <style>
 :root{--k:#000;--w:#fff;box-sizing:border-box;color-scheme:dark}
 *,*::before,*::after{box-sizing:inherit;margin:0}
-html{background:#000;scroll-padding-top:4rem;-webkit-text-size-adjust:100%}
+html{background:#000;scroll-padding-top:4rem;-webkit-text-size-adjust:100%;overflow-x:hidden;overflow-x:clip}
 body{background:var(--k);color:var(--w);font:400 clamp(1rem,1.2vw,1.15rem)/1.45 "Inter Tight",Helvetica,Arial,sans-serif;overflow-x:hidden}
 .mono,.lab{font:600 .74rem/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}
 #hudv{position:fixed;left:0;right:0;top:0;height:calc(4.5rem + env(safe-area-inset-top,0px));z-index:8;pointer-events:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);-webkit-mask-image:linear-gradient(180deg,#000 42%,rgba(0,0,0,.7) 68%,transparent 100%);mask-image:linear-gradient(180deg,#000 42%,rgba(0,0,0,.7) 68%,transparent 100%)}
@@ -21,7 +21,7 @@ body{background:var(--k);color:var(--w);font:400 clamp(1rem,1.2vw,1.15rem)/1.45 
 .gr{--c1:#fff;--c2:#FFE600;--c3:#B6FF4A;--c4:#9BF0FF;background:#005421;color:#fff}
 h1,h2{font-weight:900;text-transform:uppercase;letter-spacing:-.035em;overflow-wrap:break-word}
 h1{font-size:clamp(2.2rem,10vw,13rem);line-height:.98;padding-bottom:.05em}
-h1 span{white-space:nowrap}
+h1 span{white-space:normal}
 @media(min-width:900px){h1{font-size:clamp(5rem,11.5vw,13rem)}}
 h2{font-size:clamp(2.2rem,7.5vw,7rem);line-height:1.02;margin:.9rem 0 clamp(2rem,4.5vw,3.5rem)}
 h3{font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:1;font-size:clamp(1.5rem,3.2vw,2.8rem);margin-bottom:1rem}
@@ -187,6 +187,7 @@ button{font-size:.95rem}
 @media(max-width:640px){
  .row,.tl .row{grid-template-columns:1fr;gap:.3rem}
  #natg{grid-template-columns:minmax(0,1fr)}
+ .grid,.two,.three,.flow{grid-template-columns:minmax(0,1fr)}
  .row .n{display:none}
  .cas{height:6rem}
  .cmp .hd{display:none}
@@ -244,6 +245,7 @@ button,.row[role=button],.sim input[type=range]{-webkit-tap-highlight-color:rgba
 @media(max-width:767px){
   body{font-size:1.15rem;line-height:1.5}
   .mono,.lab{font-size:.95rem;letter-spacing:.11em;line-height:1.4}
+  h1{font-size:clamp(2.2rem,10vw,13rem);line-height:.98}
   h2{font-size:clamp(2.4rem,8.8vw,7rem);margin:.8rem 0 1.7rem;text-wrap:balance}
   h3{font-size:clamp(1.75rem,7vw,3.2rem);margin-bottom:.9rem}
   .lead{font-size:clamp(2.2rem,8.8vw,5.2rem)}
@@ -289,6 +291,46 @@ button,.row[role=button],.sim input[type=range]{-webkit-tap-highlight-color:rgba
 }
 @media(max-width:560px){.leg{grid-template-columns:1fr;gap:1.4rem}}
 </style>
+<script>
+/* Auto-correção: Chrome "Site de desktop" / WebView ignorando a meta viewport.
+   Celular com layout largo e escala < 1 => restaura o comportamento de celular
+   antes do primeiro paint: reaplica o CSS mobile e compensa a fonte raiz. */
+(function(){
+ var vv=window.visualViewport,coarse=window.matchMedia&&matchMedia("(pointer:coarse)").matches;
+ var sw=screen.width||0,inner=innerWidth;
+ /* iOS/Safari lida bem com a meta viewport — não mexer (evita falso positivo). */
+ if(!coarse||!sw||/iPhone|iPad|iPod/.test(navigator.userAgent))return;
+ /* Largura de layout ≫ tela (980 num cel de 390) = meta viewport ignorada;
+    ou escala visual < 1 (página renderizada reduzida). */
+ var overW=inner>sw*2,fitZoom=!!(vv&&vv.scale<0.9&&inner>sw*1.1&&inner>=560);
+ if(!(overW||fitZoom))return;
+ var k=(vv&&vv.scale<0.9)?1/vv.scale:Math.min(inner/sw,4);if(k<1)k=1;
+ var st=document.querySelector("style");
+ document.documentElement.classList.add("dm");
+ document.documentElement.style.fontSize=(16*k)+"px";
+ try{
+  if(st&&st.sheet){
+   var css="",rules=st.sheet.cssRules;
+   for(var i=0;i<rules.length;i++){var r=rules[i];
+    if(r.type===CSSRule.MEDIA_RULE&&/max-width/.test(r.media.mediaText)){
+     for(var j=0;j<r.cssRules.length;j++){var x=r.cssRules[j];
+      if(!x.selectorText)continue;
+      /* px precisa ser multiplicado (a escala visual encolhe tudo em 1/k);
+         rem e vw já se compensam sozinhos com a fonte raiz / largura. */
+      var decl=x.style.cssText.replace(/(-?[\d.]+)px/g,function(m,n){return (Math.round(parseFloat(n)*k*100)/100)+"px"});
+      css+=x.selectorText.split(",").map(function(s){s=s.trim();return s==="html"?".dm":".dm "+s}).join(",")+"{"+decl+"}";
+     }}}
+   if(css){var n=document.createElement("style");n.id="dmcss";n.textContent=css;document.head.appendChild(n);}
+  }
+ }catch(e){}
+ var t=document.createElement("div");
+ t.textContent="Modo \"Site de desktop\" detectado — layout já ajustado. Toque em ⋮ e desmarque para desativar de vez.";
+ t.style.cssText="position:fixed;left:3%;right:3%;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:99;padding:.6rem .9rem;background:#000;color:#fff;border:3px solid #B6FF4A;font:600 .8rem/1.4 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;text-align:center;cursor:pointer";
+ t.onclick=function(){t.remove()};
+ var add=function(){document.body.appendChild(t);setTimeout(function(){t.remove()},14000)};
+ document.body?add():addEventListener("DOMContentLoaded",add);
+})();
+</script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="inkedge" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
@@ -486,6 +528,7 @@ button,.row[role=button],.sim input[type=range]{-webkit-tap-highlight-color:rgba
 <script>
 (function(){
 const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const DM=document.documentElement.classList.contains("dm"); // celular em modo "Site de desktop"
 const R=(c,items)=>{c=typeof c==="string"?$(c):c;c.innerHTML=items.map((r,i)=>`<div class="row"><div class="n">${String(i+1).padStart(2,"0")}</div><div><b>${r[0]}</b>${r[1]?`<span>${r[1]}</span>`:""}</div></div>`).join("")};
 const G=(sel,items)=>{$(sel).innerHTML=items.map(i=>`<div class="cell"><div class="mid">${i[0]}</div><p>${i[1]}</p></div>`).join("")};
 const L=(sel,items)=>{$(sel).innerHTML=items.map(i=>`<div class="cell"><div class="mid">${i[0]}</div><ul>${i[1].map(x=>`<li>${x}</li>`).join("")}</ul></div>`).join("")};
@@ -550,12 +593,13 @@ mm.add("(prefers-reduced-motion: no-preference)",()=>{
   gsap.from(".blk",{clipPath:"inset(0 100% 0 0)",duration:.9,ease:"power3.out",scrollTrigger:{trigger:".blk",start:"top 88%",once:true}});
   gsap.from(".tl .ln",{scaleY:0,ease:"none",scrollTrigger:{trigger:".tl",start:"top 70%",end:"bottom 70%",scrub:.4}});
 });
-// divisão: fixa no centro da tela só em telas grandes; no celular, anima ao entrar
-mm.add("(min-width:900px) and (min-height:620px) and (prefers-reduced-motion: no-preference)",()=>{
+// divisão: fixa no centro da tela só em telas grandes; no celular (e em modo
+// "Site de desktop" no celular), anima ao entrar
+mm.add(DM?"screen and (max-width:10px)":"(min-width:900px) and (min-height:620px) and (prefers-reduced-motion: no-preference)",()=>{
   const tl=gsap.timeline({scrollTrigger:{trigger:"#cas",start:"center center",end:"+=1300",pin:true,scrub:.6,anticipatePin:1,invalidateOnRefresh:false}});
   tl.from("#cas .seg",{clipPath:"inset(0 100% 0 0)",duration:1,stagger:1,ease:"none"}).from("#cas .la",{autoAlpha:.12,y:30,duration:.6,stagger:1},0);
 });
-mm.add("(max-width:899px), (max-height:619px)",()=>{
+mm.add(DM?"(min-width:900px)":"(max-width:899px), (max-height:619px)",()=>{
   const tl=gsap.timeline({scrollTrigger:{trigger:"#cas",start:"top 80%",once:true}});
   tl.from("#cas .seg",{clipPath:"inset(0 100% 0 0)",duration:.7,stagger:.25,ease:"power3.out"}).from("#cas .la",{autoAlpha:0,y:24,duration:.5,stagger:.15},0.2);
 });
